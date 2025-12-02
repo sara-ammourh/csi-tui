@@ -1,0 +1,10 @@
+C:\Users\user\RustroverProjects\csi_tui\target\debug\deps\serialport-88f4171950f3cf54.d: C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\lib.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\mod.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\com.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\dcb.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\enumerate.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\error.rs
+
+C:\Users\user\RustroverProjects\csi_tui\target\debug\deps\libserialport-88f4171950f3cf54.rmeta: C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\lib.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\mod.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\com.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\dcb.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\enumerate.rs C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\error.rs
+
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\lib.rs:
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\mod.rs:
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\com.rs:
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\dcb.rs:
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\enumerate.rs:
+C:\Users\user\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serialport-4.8.1\src\windows\error.rs:
