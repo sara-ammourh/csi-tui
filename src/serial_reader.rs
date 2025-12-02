@@ -22,12 +22,31 @@ use chrono::Utc;
 use crate::csv_logger::CsvLogger;
 use crate::parser::{extract_csi_block, CsiParser};
 use crate::state::{CsiFrame, SharedState};
+use serialport::{available_ports, SerialPortType};
+
+/// Automatically chooses the first available USB serial port.
+pub fn auto_select_port() -> Option<String> {
+    let ports = available_ports().ok()?;
+
+    for p in ports {
+        match &p.port_type {
+            SerialPortType::UsbPort(_) => {
+                // First USB serial device → most likely the ESP32-C3
+                return Some(p.port_name.clone());
+            }
+            _ => {}
+        }
+    }
+
+    None
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔹 Serial Reader Configuration / إعدادات قارئ التسلسل
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Default serial port name / اسم المنفذ التسلسلي الافتراضي
+/// Used as a fallback if auto-detection fails.
 pub const DEFAULT_PORT: &str = "COM3";
 
 /// Default baud rate / معدل البود الافتراضي
@@ -45,16 +64,16 @@ pub const READ_TIMEOUT_MS: u64 = 100;
 pub struct SerialReader {
     /// Port name (e.g., "COM3") / اسم المنفذ (مثل "COM3")
     port_name: String,
-    
+
     /// Baud rate / معدل البود
     baud_rate: u32,
-    
+
     /// Shared application state / حالة التطبيق المشتركة
     state: SharedState,
-    
+
     /// Flag to stop the reader thread / علامة لإيقاف خيط القارئ
     stop_flag: Arc<AtomicBool>,
-    
+
     /// Handle to the reader thread / مقبض خيط القارئ
     thread_handle: Option<JoinHandle<()>>,
 }
@@ -63,8 +82,11 @@ impl SerialReader {
     /// Create a new serial reader
     /// إنشاء قارئ تسلسل جديد
     pub fn new(state: SharedState) -> Self {
+        // Detect port once as initial default; will be refreshed on start()
+        let detected = auto_select_port().unwrap_or(DEFAULT_PORT.to_string());
+
         Self {
-            port_name: DEFAULT_PORT.to_string(),
+            port_name: detected,
             baud_rate: DEFAULT_BAUD_RATE,
             state,
             stop_flag: Arc::new(AtomicBool::new(false)),
@@ -75,27 +97,31 @@ impl SerialReader {
     /// Start the serial reader thread
     /// بدء خيط قارئ التسلسل
     pub fn start(&mut self) -> Result<(), String> {
-        // Check if already running / التحقق مما إذا كان يعمل بالفعل
+        // Check if already running
         if self.thread_handle.is_some() {
             return Err("Serial reader already running".to_string());
         }
 
-        // Reset stop flag / إعادة تعيين علامة الإيقاف
+        // Reset stop flag
         self.stop_flag.store(false, Ordering::SeqCst);
 
-        // Clone values for the thread / نسخ القيم للخيط
-        let port_name = self.port_name.clone();
+        // 🔍 Detect serial port on startup
+        let detected_port = auto_select_port().unwrap_or(self.port_name.clone());
+        self.port_name = detected_port.clone();
+
+        let port_name = detected_port;
         let baud_rate = self.baud_rate;
         let state = Arc::clone(&self.state);
         let stop_flag = Arc::clone(&self.stop_flag);
 
-        // Update state to show starting / تحديث الحالة لإظهار البدء
+        // 🔥 UPDATE AppState.port_name SO UI CAN DISPLAY REAL PORT
         {
-            let mut state_guard = state.lock().map_err(|e| e.to_string())?;
-            state_guard.status_message = format!("🔄 Connecting to {}...", port_name);
+            let mut guard = state.lock().map_err(|e| e.to_string())?;
+            guard.port_name = port_name.clone();   // <-- IMPORTANT LINE
+            guard.status_message = format!("🔄 Connecting to {}...", port_name);
         }
 
-        // Spawn the reader thread / إنشاء خيط القارئ
+        // Spawn the reader thread
         let handle = thread::spawn(move || {
             run_serial_reader(&port_name, baud_rate, &state, &stop_flag);
         });
@@ -103,6 +129,7 @@ impl SerialReader {
         self.thread_handle = Some(handle);
         Ok(())
     }
+
 
     /// Stop the serial reader thread
     /// إيقاف خيط قارئ التسلسل
@@ -140,6 +167,7 @@ fn run_serial_reader(
     baud_rate: u32,
     state: &SharedState,
     stop_flag: &Arc<AtomicBool>,
+    //
 ) {
     // Try to open the serial port / محاولة فتح المنفذ التسلسلي
     let port_result = serialport::new(port_name, baud_rate)
@@ -159,7 +187,8 @@ fn run_serial_reader(
             // Update state to show error / تحديث الحالة لإظهار الخطأ
             if let Ok(mut state_guard) = state.lock() {
                 state_guard.receiver_active = false;
-                state_guard.status_message = format!("❌ Failed to open {}: {}", port_name, e);
+                state_guard.status_message =
+                    format!("❌ Failed to open {}: {}", port_name, e);
             }
             return;
         }
@@ -231,13 +260,13 @@ fn process_buffer(
         // البحث عن "mac:" التالية لتحديد الكتلة
         if let Some(end_rel) = buffer[start + 4..].find("mac:") {
             let end = start + 4 + end_rel;
-            
+
             // Extract the complete block / استخراج الكتلة الكاملة
             let block = buffer[start..end].to_string();
-            
+
             // Remove processed block from buffer / إزالة الكتلة المعالجة من المخزن
             buffer.replace_range(start..end, "");
-            
+
             // Parse the block / تحليل الكتلة
             if let Some(csi_data) = extract_csi_block(&block) {
                 if let Some(result) = parser.parse(csi_data) {

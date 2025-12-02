@@ -81,7 +81,7 @@ fn render_receiver_status(frame: &mut Frame, area: Rect, state: &AppState) {
 fn render_stats(frame: &mut Frame, area: Rect, state: &AppState) {
     // Get Wi-Fi standard based on subcarrier count
     let wifi_info = crate::detectors::get_subcarrier_info(state.max_sc);
-    
+
     let text = vec![
         Line::from(vec![
             Span::raw("Frames: "),
