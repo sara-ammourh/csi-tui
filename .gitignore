@@ -1,0 +1,19 @@
+# === Build / Artifacts ===
+/target/
+
+# === IDE / Editor ===
+# RustRover / IntelliJ
+.idea/
+*.iml
+
+# VSCode
+.vscode/
+
+# === Logs / Temporary ===
+*.log
+*.tmp
+
+# === Environment / Secrets ===
+.env
+.env.*
+*.env
