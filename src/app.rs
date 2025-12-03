@@ -18,30 +18,27 @@ use crate::serial_reader::SerialReader;
 use crate::state::SharedState;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🔹 Application Configuration / إعدادات التطبيق
+// 🔹 Application Configuration
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Tick rate for the event loop in milliseconds
-/// معدل التحديث لحلقة الأحداث بالميلي ثانية
 const TICK_RATE_MS: u64 = 50;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🔹 Application Structure / هيكل التطبيق
+// 🔹 Application Structure
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Main application structure
-/// هيكل التطبيق الرئيسي
 pub struct App {
-    /// Shared application state / حالة التطبيق المشتركة
+    /// Shared application state
     state: SharedState,
     
-    /// Serial reader instance / مثيل قارئ التسلسل
+    /// Serial reader instance
     serial_reader: Option<SerialReader>,
 }
 
 impl App {
     /// Create a new application instance
-    /// إنشاء مثيل تطبيق جديد
     pub fn new(state: SharedState) -> Self {
         Self {
             state,
@@ -50,16 +47,15 @@ impl App {
     }
 
     /// Handle keyboard and other events
-    /// معالجة لوحة المفاتيح والأحداث الأخرى
-    /// 
-    /// Returns true if should quit / يرجع true إذا يجب الخروج
+    ///
+    /// Returns true if should quit
     pub fn handle_events(&mut self) -> Result<bool, String> {
-        // Poll for events with timeout / استطلاع الأحداث مع مهلة
+        // Poll for events with timeout
         if event::poll(Duration::from_millis(TICK_RATE_MS))
             .map_err(|e| format!("Event poll error: {}", e))?
         {
             if let Event::Key(key) = event::read().map_err(|e| format!("Event read error: {}", e))? {
-                // Only handle key press events / معالجة أحداث الضغط على المفاتيح فقط
+                // Only handle key press events
                 if key.kind == KeyEventKind::Press {
                     return self.handle_key(key.code);
                 }
@@ -70,17 +66,16 @@ impl App {
     }
 
     /// Handle a single key press
-    /// معالجة ضغطة مفتاح واحدة
     fn handle_key(&mut self, key: KeyCode) -> Result<bool, String> {
         match key {
-            // Q - Quit / الخروج
+            // Q - Quit
             KeyCode::Char('q') | KeyCode::Char('Q') => {
                 return Ok(true);
             }
 
-            // S - Start Serial / بدء التسلسل
+            // S - Start Serial
             KeyCode::Char('s') | KeyCode::Char('S') => {
-                // Stop playback mode first / إيقاف وضع التشغيل أولاً
+                // Stop playback mode first
                 {
                     let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                     state_guard.stop_playback();
@@ -88,20 +83,20 @@ impl App {
                 self.start_serial()?;
             }
 
-            // X - Stop Serial / إيقاف التسلسل
+            // X - Stop Serial
             KeyCode::Char('x') | KeyCode::Char('X') => {
                 self.stop_serial();
-                // Also stop playback / إيقاف التشغيل أيضاً
+                // Also stop playback
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                 state_guard.stop_playback();
             }
 
-            // L - Load CSV / تحميل CSV
+            // L - Load CSV
             KeyCode::Char('l') | KeyCode::Char('L') => {
                 self.load_csv()?;
             }
 
-            // Space - Play/Pause playback / تشغيل/إيقاف مؤقت
+            // Space - Play/Pause playback
             KeyCode::Char(' ') => {
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                 state_guard.toggle_playback();
@@ -113,7 +108,7 @@ impl App {
                 );
             }
 
-            // Left Arrow - Seek backward 5 seconds / ترجيع 5 ثواني
+            // Left Arrow - Seek backward 5 seconds
             KeyCode::Left => {
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                 if state_guard.playback_mode {
@@ -125,7 +120,7 @@ impl App {
                 }
             }
 
-            // Right Arrow - Seek forward 5 seconds / تقديم 5 ثواني
+            // Right Arrow - Seek forward 5 seconds
             KeyCode::Right => {
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                 if state_guard.playback_mode {
@@ -137,7 +132,7 @@ impl App {
                 }
             }
 
-            // Up Arrow - Seek backward 30 seconds / ترجيع 30 ثانية
+            // Up Arrow - Seek backward 30 seconds
             KeyCode::Up => {
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                 if state_guard.playback_mode {
@@ -149,7 +144,7 @@ impl App {
                 }
             }
 
-            // Down Arrow - Seek forward 30 seconds / تقديم 30 ثانية
+            // Down Arrow - Seek forward 30 seconds
             KeyCode::Down => {
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                 if state_guard.playback_mode {
@@ -161,7 +156,7 @@ impl App {
                 }
             }
 
-            // Home - Go to start / الذهاب للبداية
+            // Home - Go to start
             KeyCode::Home => {
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                 if state_guard.playback_mode {
@@ -170,7 +165,7 @@ impl App {
                 }
             }
 
-            // End - Go to end / الذهاب للنهاية
+            // End - Go to end
             KeyCode::End => {
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                 if state_guard.playback_mode {
@@ -180,7 +175,7 @@ impl App {
                 }
             }
 
-            // R - Restart playback / إعادة التشغيل
+            // R - Restart playback
             KeyCode::Char('r') | KeyCode::Char('R') => {
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                 if state_guard.playback_mode {
@@ -190,11 +185,11 @@ impl App {
                 }
             }
 
-            // B - Back to Live Mode / العودة للبث المباشر
+            // B - Back to Live Mode
             KeyCode::Char('b') | KeyCode::Char('B') => {
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
                 if state_guard.playback_mode {
-                    // Exit playback mode / الخروج من وضع التشغيل
+                    // Exit playback mode
                     state_guard.playback_mode = false;
                     state_guard.playback_playing = false;
                     state_guard.loaded_frames.clear();
@@ -203,7 +198,7 @@ impl App {
                 }
             }
 
-            // Escape - Quit / الخروج
+            // Escape - Quit
             KeyCode::Esc => {
                 return Ok(true);
             }
@@ -215,12 +210,11 @@ impl App {
     }
 
     /// Start the serial reader
-    /// بدء قارئ التسلسل
     fn start_serial(&mut self) -> Result<(), String> {
-        // Stop existing reader if any / إيقاف القارئ الموجود إذا كان موجوداً
+        // Stop existing reader if any
         self.stop_serial();
 
-        // Create and start new reader / إنشاء وبدء قارئ جديد
+        // Create and start new reader
         let mut reader = SerialReader::new(self.state.clone());
         
         if let Err(e) = reader.start() {
@@ -234,7 +228,6 @@ impl App {
     }
 
     /// Stop the serial reader
-    /// إيقاف قارئ التسلسل
     fn stop_serial(&mut self) {
         if let Some(ref mut reader) = self.serial_reader {
             reader.stop();
@@ -243,18 +236,17 @@ impl App {
     }
 
     /// Load CSV file
-    /// تحميل ملف CSV
     fn load_csv(&mut self) -> Result<(), String> {
-        // Stop serial reader if running / إيقاف قارئ التسلسل إذا كان يعمل
+        // Stop serial reader if running
         self.stop_serial();
 
-        // Show loading message / عرض رسالة التحميل
+        // Show loading message
         {
             let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
             state_guard.status_message = "📂 Opening file dialog...".to_string();
         }
 
-        // Pick and load CSV file / اختيار وتحميل ملف CSV
+        // Pick and load CSV file
         match pick_and_load_csv(&self.state) {
             Ok(count) => {
                 let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
@@ -270,29 +262,27 @@ impl App {
     }
 
     /// Run detection algorithms on current frames
-    /// تشغيل خوارزميات الكشف على الإطارات الحالية
     pub fn run_detectors(&mut self) -> Result<(), String> {
         let mut state_guard = self.state.lock().map_err(|e| e.to_string())?;
         
-        // Run detectors on all frames / تشغيل الكاشفات على جميع الإطارات
+        // Run detectors on all frames
         let results = quick_detect(&state_guard.frames);
         
-        // Update detection results / تحديث نتائج الكشف
+        // Update detection results
         state_guard.detections = results;
         
-        // Update history for charts / تحديث التاريخ للرسوم البيانية
+        // Update history for charts
         state_guard.update_detection_history();
 
         Ok(())
     }
 
     /// Cleanup resources before exit
-    /// تنظيف الموارد قبل الخروج
     fn cleanup(&mut self) {
-        // Stop serial reader / إيقاف قارئ التسلسل
+        // Stop serial reader
         self.stop_serial();
 
-        // Flush CSV logger if exists / تفريغ مسجل CSV إذا كان موجوداً
+        // Flush CSV logger if exists
         if let Ok(mut state_guard) = self.state.lock() {
             if let Some(ref mut logger) = state_guard.csv_logger {
                 let _ = logger.flush();
